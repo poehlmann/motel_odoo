@@ -37,9 +37,9 @@ var formats = require('web.formats');
 
 var QWeb = core.qweb;
 var _t = core._t;
-
+var intervalExtraRoom;
 var round_pr = utils.round_precision;
-
+var intervalExtraHour;
 /*--------------------------------------*\
  |          THE SCREEN WIDGET           |
 \*======================================*/
@@ -418,6 +418,8 @@ var ActionpadWidget = PosBaseWidget.extend({
         this._super();
         this.$('.pay').click(function(){
             console.log("pagar!!!");
+            clearInterval(intervalExtraHour);
+            console.log("intervalExtraHour",intervalExtraHour);
             self.gui.show_screen('payment');
         });
         this.$('.set-customer').click(function(){
@@ -523,11 +525,8 @@ var OrderWidget = PosBaseWidget.extend({
                     try {
                         console.log("Agregando Habitacion", product_by_category[productA]);
                         this.pos.get_order().add_product(product_by_category[productA]);
-
-                        var interval = setInterval(this.add_extra_hour(this.pos), 10000);
-                        console.log("interval",interval);
-
-                        //this.product_list_widget.set_product_list(product_by_category[productA]);
+                        console.log("probando setInterval");
+                        this.extraHour();
                     } catch (e) {
                         console.log("error", e);
                     }
@@ -535,6 +534,38 @@ var OrderWidget = PosBaseWidget.extend({
             }
         }
 
+    },
+    extraHour : function(){
+        var product_by_category = this.pos.db.get_product_by_category(0);
+        var pos= this.pos;
+        var time = 3000;//3600000
+        (function loop() {
+
+            intervalExtraHour = setInterval(function loop(){
+                if(time == 3000)//3600000
+                {
+                    time = 6000;//4500000
+                }
+                else if(time == 6000)//4500000
+                {
+                    time = 3000;//3600000
+                }
+                console.log("time",time);
+                for (var productA in product_by_category) {
+                    console.log("buscando producto", product_by_category[productA]);
+                    if (product_by_category[productA].display_name == "Hora Adicional") {
+                        console.log("encontro!");
+                        try {
+                            console.log("Agregando Habitacion", product_by_category[productA]);
+                            pos.get_order().add_product(product_by_category[productA]);
+                        } catch (e) {
+                            console.log("error", e);
+                        }
+                    }
+                }
+            }, time);
+
+        }());
     },
     render_orderline: function(orderline){
         var el_str  = QWeb.render('Orderline',{widget:this, line:orderline});
@@ -1693,7 +1724,7 @@ var PaymentScreenWidget = ScreenWidget.extend({
             }
         }
     },
-
+/*
     addExtraHours : function (){
         console.log("agregar horas extras");
         var order = this.pos.get_order();
@@ -1735,7 +1766,7 @@ var PaymentScreenWidget = ScreenWidget.extend({
             }
         }
     },
-
+*/
     render_paymentlines: function() {
         var self  = this;
         var order = this.pos.get_order();
@@ -1743,8 +1774,7 @@ var PaymentScreenWidget = ScreenWidget.extend({
         if (!order) {
             return;
         }
-
-        this.addExtraHours();
+        //this.addExtraHours();
 
         var lines = order.get_paymentlines();
 
